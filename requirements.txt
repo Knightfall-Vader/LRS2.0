@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+pillow
+numpy
+opencv-python
+pandas
