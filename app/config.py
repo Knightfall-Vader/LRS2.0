@@ -1,20 +1,27 @@
+import os
+from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic import Field
-from pydantic_settings import BaseSettings
-from pydantic import BaseSettings, Field
+
+def _env(name: str, default, cast=None):
+    value = os.getenv(f"LRS_{name}")
+    if value is None or value == "":
+        return default
+    if cast is None:
+        return value
+    return cast(value)
 
 
-class Settings(BaseSettings):
-    app_name: str = "LRS2.0"
-    models_dir: Path = Path("models")
-    yolo_weights: Path = Path("models/plate_detector.pt")
-    trocr_weights_dir: Path = Path("models/trocr")
-    authorized_plates_path: Path = Path("authorized_plates.json")
-    input_size: int = 640
-
-    class Config:
-        env_prefix = "LRS_"
+@dataclass(frozen=True)
+class Settings:
+    app_name: str = _env("APP_NAME", "LRS2.0")
+    models_dir: Path = _env("MODELS_DIR", Path("models"), Path)
+    yolo_weights: Path = _env("YOLO_WEIGHTS", Path("models/plate_detector.pt"), Path)
+    trocr_weights_dir: Path = _env("TROCR_WEIGHTS_DIR", Path("models/trocr"), Path)
+    authorized_plates_path: Path = _env(
+        "AUTHORIZED_PLATES_PATH", Path("authorized_plates.json"), Path
+    )
+    input_size: int = _env("INPUT_SIZE", 640, int)
 
 
 settings = Settings()
