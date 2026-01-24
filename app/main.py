@@ -56,9 +56,13 @@ def infer_image_visualize(file: UploadFile = File(...)) -> Response:
     
     # Draw bounding boxes and labels
     for i, detection in enumerate(result.detections):
+        # Only draw detections above confidence threshold
+        if detection.confidence < settings.confidence_threshold:
+            continue
+            
         x1, y1, x2, y2 = detection.bbox_xyxy
         
-        # Draw rectangle (red color)
+        # Draw rectangle (red color for general detections)
         draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
         
         # Add confidence score
@@ -66,15 +70,25 @@ def infer_image_visualize(file: UploadFile = File(...)) -> Response:
         draw.text((x1, y1 - 20), conf_text, fill="red", font=font)
     
     # Add recognition result if available
-    if result.recognition:
+    if result.recognition and result.detections:
         # Draw the first detection's bounding box in green if recognition succeeded
-        if result.detections:
-            x1, y1, x2, y2 = result.detections[0].bbox_xyxy
-            draw.rectangle([x1, y1, x2, y2], outline="green", width=3)
-            
-            # Add recognized text
-            text = f"Plate: {result.recognition.text}"
-            draw.text((x1, y1 - 40), text, fill="green", font=font)
+        x1, y1, x2, y2 = result.detections[0].bbox_xyxy
+        draw.rectangle([x1, y1, x2, y2], outline="green", width=3)
+        
+        # Add recognized text
+        text = f"Plate: {result.recognition.text}"
+        draw.text((x1, y1 - 40), text, fill="green", font=font)
+    
+    # Add legend
+    legend_y = 10
+    legend_lines = [
+        "Legend:",
+        f"Red Box: Detected Region (Conf > {settings.confidence_threshold})",
+        "Green Box: Region used for OCR"
+    ]
+    for line in legend_lines:
+        draw.text((10, legend_y), line, fill="blue", font=font)
+        legend_y += 25
     
     # Convert image back to bytes
     img_byte_arr = io.BytesIO()

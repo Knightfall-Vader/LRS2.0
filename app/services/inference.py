@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 from PIL import Image
 
+from app.config import settings
 from app.schemas import PlateDetection, PlateInferenceResult, PlateRecognitionResult
 from app.services.text_normalization import normalize_plate_text
 
@@ -47,7 +48,7 @@ class InferenceService:
         self._load_yolo()
         if self._yolo_model is None:
             return []
-        results = self._yolo_model.predict(source=np.array(image), verbose=False, conf=0.01)
+        results = self._yolo_model.predict(source=np.array(image), verbose=False, conf=settings.confidence_threshold)
         detections: List[PlateDetection] = []
         for result in results:
             for box in result.boxes:
