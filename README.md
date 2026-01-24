@@ -32,6 +32,20 @@ uvicorn app.main:app --reload
 curl -F "file=@dataset/images/val/27716775.jpg" http://localhost:8000/infer/image
 ```
 
+### Windows PowerShell Notes
+PowerShell aliases `curl` to `Invoke-WebRequest`, which does not support `-F`. Use one of the options below in a **new terminal** while Uvicorn is running:
+
+```powershell
+# Option 1: Call the real curl executable
+curl.exe -F "file=@dataset/images/val/27716775.jpg" http://localhost:8000/infer/image
+```
+
+```powershell
+# Option 2: Use Invoke-WebRequest with multipart form data
+$form = @{ file = Get-Item "dataset\\images\\val\\27716775.jpg" }
+Invoke-WebRequest -Uri "http://localhost:8000/infer/image" -Method Post -Form $form
+```
+
 ## Troubleshooting
 ### `Form data requires "python-multipart" to be installed`
 The image upload endpoint requires `python-multipart`. Install dependencies
