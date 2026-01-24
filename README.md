@@ -32,6 +32,14 @@ uvicorn app.main:app --reload
 curl -F "file=@dataset/images/val/27716775.jpg" http://localhost:8000/infer/image
 ```
 
+## Troubleshooting
+### `Form data requires "python-multipart" to be installed`
+The image upload endpoint requires `python-multipart`. Install dependencies
+after pulling the latest changes:
+```bash
+pip install -r requirements.txt
+```
+
 ## Training
 ### YOLO (Plate Detection)
 ```bash
