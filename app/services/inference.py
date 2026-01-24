@@ -36,16 +36,18 @@ class InferenceService:
             return
         if importlib.util.find_spec("transformers") is None:
             return
-        from transformers import AutoProcessor, VisionEncoderDecoderModel
+        from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
-        self._trocr_processor = AutoProcessor.from_pretrained(str(self.trocr_dir))
+        # Load the model first
         self._trocr_model = VisionEncoderDecoderModel.from_pretrained(str(self.trocr_dir))
+        # Then load the correct TrOCR processor
+        self._trocr_processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
 
     def _detect(self, image: Image.Image) -> List[PlateDetection]:
         self._load_yolo()
         if self._yolo_model is None:
             return []
-        results = self._yolo_model.predict(source=np.array(image), verbose=False)
+        results = self._yolo_model.predict(source=np.array(image), verbose=False, conf=0.01)
         detections: List[PlateDetection] = []
         for result in results:
             for box in result.boxes:
@@ -68,6 +70,8 @@ class InferenceService:
         self._load_trocr()
         if self._trocr_model is None or self._trocr_processor is None:
             return None
+        
+        # Prepare image for TrOCR
         pixel_values = self._trocr_processor(images=plate_image, return_tensors="pt").pixel_values
         generated_ids = self._trocr_model.generate(pixel_values)
         text = self._trocr_processor.batch_decode(generated_ids, skip_special_tokens=True)[0]

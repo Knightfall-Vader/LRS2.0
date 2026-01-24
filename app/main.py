@@ -1,4 +1,8 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import Response
+import io
+from PIL import Image, ImageDraw, ImageFont
+import json
 
 from app.config import settings
 from app.schemas import (
@@ -31,6 +35,53 @@ def infer_image(file: UploadFile = File(...)) -> PlateInferenceResult:
     if result.recognition is not None:
         result.authorized = store.is_authorized(result.recognition.text)
     return result
+
+@app.post("/infer/visualize")
+def infer_image_visualize(file: UploadFile = File(...)) -> Response:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+    
+    content = file.file.read()
+    result = service.infer_bytes(content)
+    
+    # Load image for drawing
+    image = Image.open(io.BytesIO(content)).convert("RGB")
+    draw = ImageDraw.Draw(image)
+    
+    # Try to load a font (fallback to default if not available)
+    try:
+        font = ImageFont.truetype("arial.ttf", 16)
+    except:
+        font = ImageFont.load_default()
+    
+    # Draw bounding boxes and labels
+    for i, detection in enumerate(result.detections):
+        x1, y1, x2, y2 = detection.bbox_xyxy
+        
+        # Draw rectangle (red color)
+        draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
+        
+        # Add confidence score
+        conf_text = f"Conf: {detection.confidence:.3f}"
+        draw.text((x1, y1 - 20), conf_text, fill="red", font=font)
+    
+    # Add recognition result if available
+    if result.recognition:
+        # Draw the first detection's bounding box in green if recognition succeeded
+        if result.detections:
+            x1, y1, x2, y2 = result.detections[0].bbox_xyxy
+            draw.rectangle([x1, y1, x2, y2], outline="green", width=3)
+            
+            # Add recognized text
+            text = f"Plate: {result.recognition.text}"
+            draw.text((x1, y1 - 40), text, fill="green", font=font)
+    
+    # Convert image back to bytes
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='JPEG')
+    img_byte_arr.seek(0)
+    
+    return Response(content=img_byte_arr.getvalue(), media_type="image/jpeg")
 
 
 @app.post("/authorized", response_model=AuthorizedPlateResponse)

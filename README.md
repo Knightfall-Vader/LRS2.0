@@ -37,7 +37,7 @@ PowerShell aliases `curl` to `Invoke-WebRequest`, which does not support `-F`. U
 
 ```powershell
 # Option 1: Call the real curl executable
-curl.exe -F "file=@dataset/images/val/27716775.jpg" http://localhost:8000/infer/image
+curl.exe -F "file=@dataset/images/val/26575120.jpg" http://localhost:8000/infer/image
 ```
 
 ```powershell
